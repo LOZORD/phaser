@@ -1,8 +1,10 @@
 <!doctype html> 
+<!-- This is a Phaser.io game generated from a tutorial and fleshed out by Leo Rudberg in 2014 -->
 <html lang="en"> 
 <head> 
 	<meta charset="UTF-8" />
 	<title>MadAir: A Phaser Game</title>
+	<!-- import a nice google font and jquery -->
 	<link href='http://fonts.googleapis.com/css?family=Audiowide' rel='stylesheet' type='text/css'>
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script type="text/javascript" src="js/phaser.min.js"></script>
@@ -12,6 +14,7 @@
             font-family: Audiowide, sans-serif;
         }
 
+        /*Formatting message that notifies user that they got "MAD AIR"*/
         .air_msg
         {
         	color: pink;
@@ -21,6 +24,7 @@
         	z-index: 10;
         }
 
+        /*The queue that holds those messages*/
         #msgContainer
         {
         	position: absolute;
@@ -33,64 +37,88 @@
 </head>
 <body>
 <div id = "msgContainer">
-	<!-- <div id="#air_msg">GOT MAD AIR!</div> -->
 </div>
 
 <script type="text/javascript">
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 
+//Points acquired from stars and killing goombas
 var score = 0;
+//The textual representation of the score
 var scoreText;
+//The total cooldown on diving
 var diveRate = 100;
+//How long until the user is able to dive again
 var nextDive = 0;
+//Can the user dive now?
 var canDive = true;
+//Is the user in the midst of diving?
 var isDiving = false;
+//The number of Mad Airs (diamonds) that appear on the stage
 var numMadAirs = 10;
+//The text that represents the number of Mad Airs that have been acquired
+//This number is directly influences the user's bounciness
 var bounceText;
+//The number of Mad Airs acquired so far
 var madAirsGrabbed = 0;
+//The textual representation of the amount of time that has elapsed so far
 var timerText;
+//Has the user beat the level?
 var finished = false;
+//The number of stars that appear on the map; this is also the point threshold
 var numStars = 20;
+//Is our player (the dude) still alive?
 var dudeIsGood = true;
+//The non-numberic part of the HUD's text
 var myFontPost = "px Audiowide";
+//how far the baddie can detect the due
+var baddieSightRange = 135;
 
 function preload() {
+	//I'll just use a nice blue instead of a background image
 	//game.load.image("sky", "assets/sky.png");
 	game.load.image("ground", "assets/platform.png");
 	game.load.image("star", "assets/star.png");
 	game.load.spritesheet("dude", "assets/dude.png", 32, 48);
 	game.load.image("bonus", "assets/diamond.png");
-	//game.load.spritesheet("baddie", "assets/baddie.png", 32, 48);
-	//game.load.image("baddie", "assets/firstAid.png");
 	game.load.image("baddie", "assets/goomba.png");
 }
 
 function create() {
 
+	//extend the game screen
 	game.world.setBounds(0, 0, 1600, 600);
 
-	//game.add.sprite(0,0,"sky");
-
+	//my nice blue background
 	game.stage.backgroundColor = "#14aaff";
 
-
+	//things that other things can stand on
 	platforms = game.add.group();
 
 
 	var ground = platforms.create(0, game.world.height - 64, "ground");
+
+	//the ground should surely not move!
 	ground.body.immovable = true;
+	
+	//generate ground for the rest of the stage
 	for (var i = 400; i < game.world.width; i += 400)
 	{
 		ground = platforms.create(i, game.world.height - 64, "ground");
 		ground.body.immovable = true;
 	}
-	//console.log(ground.width + "Hello");
 
+	//TODO--fix double ground at right side of stage
+	//Also, fix clipping underneat the middle platform
+
+	//Make the ground of the stage bigger than the other platforms
 	ground.scale.setTo(2, 2);
 
+	//the ground should not be moveable
 	ground.body.immovable = true;
 
+	//create other sky-based platforms
 	var ledge = platforms.create(400, 400, "ground");
 
 	ledge.body.immovable = true;
@@ -99,38 +127,45 @@ function create() {
 
 	ledge.body.immovable = true;
 
+
+	//Create our main character -- the player!
 	player = game.add.sprite(32, game.world.height - 150, "dude");
 
+	//Start the dude off at a little bouncy
 	player.body.bounce.y = 0.2;
+
 	player.body.gravity.y = 6.0;
+
 	player.body.collideWorldBounds = true;
 
+	//the camera should follow the dude throught the stage
 	game.camera.follow(player);
-	//player.body.blocked = {x:0, y:0, up: false, bottom: true, left: true, right: true};
+	
 
+	//register the dude's sprite animations
 	player.animations.add("left", [0,1,2,3], 10, true);
+	
 	player.animations.add("right", [5,6,7,8], 10, true);
+	
 
-	cursors = game.input.keyboard.createCursorKeys();
-
-	scoreText = game.add.text(16, 16, "Score: 0/" + numStars, {font: '20px Audiowide', fill: "darkorchid"});
-	//scoreText.follow(player);
-	//scoreText.fixedToCamera = true;
-	// scoreText.fixedToCamera = true;
-	// scoreText.cameraOffset.setTo(0,0);
-
+	//time to add some baddies!
 	myEnemies = game.add.group();
 
+	//create multiple goombas placed randomly throughout the stage
 	var baddie = myEnemies.create(200, game.world.height-150, "baddie");
+
 	baddie.body.gravity.y = 6;
+
 	for (var i = Math.floor(Math.random()*250); i < game.world.width; i+= Math.floor(Math.random()*300))
 	{
 		baddie = myEnemies.create(200 + i, game.world.height - 150, "baddie");
+		
 		baddie.body.gravity.y = 6;
+		
 		baddie.body.collideWorldBounds = true;
-		//baddie.dirTimer = 5000;
 	}
 
+	//create two special baddies on top of the middle platform
 	baddie = myEnemies.create(600, 350, "baddie");
 	baddie.body.gravity.y = 6;
 	baddie.body.collideWorldBounds = true;
@@ -139,20 +174,23 @@ function create() {
 	baddie.body.gravity.y = 6;
 	baddie.body.collideWorldBounds = true;
 
+	//then create a baddie on top of the lefthand platform
 	baddie = myEnemies.create(25, 200, "baddie");
 	baddie.body.gravity.y = 6;
 	baddie.body.collideWorldBounds = true;
 
 
-	// antiDude = game.add.sprite(200, game.world.height-150, "baddie");
-	// antiDude.body.gravity.y = 6;
-	// antiDude.body.collideWorldBounds = true;
+	//also register the arrow keys
+	cursors = game.input.keyboard.createCursorKeys();
 
+	//create the score text, isn't darkorchid a cool color?
+	scoreText = game.add.text(16, 16, "Score: 0/" + numStars, {font: '20px Audiowide', fill: "darkorchid"});
 
-
+	//create the text for MadAirs and the timer
 	bounceText = game.add.text(16, 64, madAirToString(), {font: '10px Audiowide', fill: "chartreuse"});
 	timerText = game.add.text(16, 88, "Time: 0", {font: "16px Audiowide", fill: "#000"});
 
+	//create stars
 	stars = game.add.group();
 
 
@@ -165,11 +203,9 @@ function create() {
 		star.body.bounce.y = 0.7 + Math.random() * 0.2;
 	};
 
+	//create a group for MadAir bonuses
 	bonuses = game.add.group();
 
-	//madAir = bonuses.create(300, 275, "bonus");
-	//madAir.body.gravity.y = 3;
-	//madAir.body.collideWorldBounds = true;
 
 	for(var i = 0; i < numMadAirs; i++)
 	{
@@ -178,17 +214,13 @@ function create() {
 		madAir.body.gravity.y = 1;
 	}
 
-	//baddies = game.add.group();
-
-	// antiDude = baddies.create(200, game.world.height - 150, "enemy");
-	// antiDude.body.collideWorldBounds = true;
-	// antiDude.body.gravity.y = 6;
-
 }
+
 
 function update() {
 
 
+	//defining how objects should interact with eachother
 	game.physics.collide(player, platforms);
 
 	game.physics.collide(stars, platforms);
@@ -199,17 +231,13 @@ function update() {
 
 	game.physics.collide(bonuses, platforms);
 
-	// game.physics.collide(baddies, platforms);
-
 	game.physics.collide(myEnemies, platforms);
 
-	//game.physics.overlap(player, antiDude, killPlayer);
-
-	//game.physics.overlap(player, antiDude, killBaddie);
-
-	//game.physics.overlap(player, myEnemies, decideFate);
+	//comment out for god-mode
+	game.physics.overlap(player, myEnemies, decideFate);
 
 
+	//hover the text over the dude's shoulder
 	scoreText.x = player.x - 140;
 	scoreText.y = player.y - 70;
 	bounceText.x = player.x - 140;
@@ -217,19 +245,19 @@ function update() {
 	timerText.x = player.x - 140;
 	timerText.y = player.y - 20;
 
+
+	//move each enemy on each increment
 	myEnemies.forEachAlive(enemyWalk, this);
 
 
-	//game.physics.collide(antiDude, platforms);
-
-	//game.physics.overlap()
-
-	 //  Reset the players velocity (movement)
+	//reset the player's speed
     player.body.velocity.x = 0
 
 
+    //if the dude is still alive, allow the user to control him
     if (dudeIsGood)
     {
+
 	    if (cursors.left.isDown)
 	    {
 	        //  Move to the left
@@ -260,38 +288,47 @@ function update() {
 	        isDiving = false;
 	    }
 
+	    //Allow the player to dive if they are not touching the ground and there is enough cooldown
 	    if(cursors.down.isDown && !player.body.touching.down && game.time.now > nextDive && canDive)
 	    {
 	    	nextDive = game.time.now + diveRate;
 	    	player.body.velocity.y = 1000;
 	    	isDiving = true;
 	    }
+	    //otherwise, if they're spamming down, they can't dive
 	    else if (cursors.down.isDown)
 	    {
 	    	canDive = false;
 
 	    }
+	    //otherwise, if cooldown hasn't occurred yet
 	    else if (game.time.now > nextDive)
 	    {
 	    	canDive = true;
 	    	isDiving = false;
 	    }
 
+
+	    //if they haven't acquired the correct number of either Mad Airs or stars/goomba kills
 	    if(madAirsGrabbed != numMadAirs && score != numStars)
 	    {
 	    	timerText.content = "Time: " + (Math.floor(game.time.now)/1000).toFixed(2);
 	    }
+	    //otherwise, if they've JUST finished
 	    else if (!finished)
 	    {
+	    	//display a success message and set finished<-true
 	    	var doneMsg = $("<div class=\"air_msg\" style=\"color:chartreuse\">LEVEL COMPLETE</div>");
 	    	$("#msgContainer").append(doneMsg);
+	    	
 	    	doneMsg.delay(5000).fadeOut("fast");
+
 	    	finished = true;
 	    }
 
+	    //allow the user to become less bouncy once they've acheived the level's goal
 	    if (finished && cursors.left.isDown && cursors.right.isDown)
 	    {
-	    	//player.body.boun
 	    	player.body.bounce.y = 0.05;
 	    }
 
@@ -318,6 +355,8 @@ function update() {
 
 
 	}
+
+	//otherwise, the dude has been killed by a baddie
 	else
 	{
 		player.body.velocity.x = 0;
@@ -327,60 +366,63 @@ function update() {
 
 }
 
+//what happens when the dude collects a star
 function collectStar (player, star)
 {
+	//destoy the star
 	star.kill();
+	//give the player a point
 	score += 1;
+	//update the score
 	scoreText.content = "Score: " + score + "/" + numStars;
-	//console.log(scoreText.font.font);
+	//increase the font size of the score text
 	scoreText.font.font = buildSize(scoreText.font.font);
 }
 
+//what happens when the dude gets a MadAir token
+
 function getMadAir (player, bonus)
 {
+	//destroy the diamond
 	bonus.kill();
 
+	//update the counter
 	madAirsGrabbed++;
 	
+	//refresh the dudes's dive
 	canDive = true;
-	
+
 	nextDive = 0;
 	
+	//bounce the dude
 	player.body.velocity.y = -400;
 	
-	// game.add.text(game.world.center-300, 0, "GET MAD AIR!", {font: "3em Audiowide", fill: "pink", align: "center"})
 
+	//push a MadAir message onto the queue
 	pushAirMessage();
 
-	//if (player.body.)
 
-	//BOUNCE MODIFICATION
+	//make the dude bouncier
 	player.body.bounce.y = madAirsGrabbed/numMadAirs;
 
+	//reprint the bounce data
 	bounceText.content = madAirToString();
 	bounceText.font.font = buildSize(bounceText.font.font);
-
-
-	//platforms.
 }
 
+//This function pushes vanishing MadAir posts onto the queue
 function pushAirMessage()
 {
-	//console.log($("#msgContainer"))
-	//document.getElementById("msgContainer").innerHTML = "ASDASDDFGSDFDSF"
 
 	var newAirMsg = $("<div class=\"air_msg\">MAD AIR!!!</div>");
 
 	$("#msgContainer").append(newAirMsg);
 
 	newAirMsg.delay(2000).fadeOut("slow");
-
-
-
-	//$("#msgContainer").append();
-	//console.log("appended");
 }
 
+//This function prints out the convolted bounce data
+//The units are topkeks/Gigashrex^2
 function madAirToString()
 {
 	var myAir = player.body.bounce.y;
@@ -412,17 +454,28 @@ function madAirToString()
 // }
 
 
+//This function determines what should happen should a baddie and the dude collide
+//Iff the dude is diving, the dude wins
+//Else, RIP Dude, I cry everytime.
 function decideFate(player, antiDude)
 {
-	console.log(score);
+	//console.log(score);
 
 	if (isDiving)
 	{
 		canDive = true;
+
+		//the dude gets bounced from kill
 		player.body.velocity.y = -350;
+
+		//more points!
 		score++;
+		//update the score!
 		scoreText.content = "Score: " + score + "/" + numStars;
+
 		scoreText.font.font = buildSize(scoreText.font.font);
+
+		//kill the baddie
 		antiDude.kill();
 	}
 	else
@@ -437,7 +490,10 @@ function decideFate(player, antiDude)
 		// var _level = player.body.y;
 		// player.body.velocity.y = -400;
 		// while(player.y != _level){}
+
+		//the dude faints
 		player.angle = -90;
+		//then gets sucked into a hellish chasm to his demise
 		player.body.gravity.y = 200;
 		player.body.immovable = true;
 		player.body.collideWorldBounds = false;
@@ -446,15 +502,23 @@ function decideFate(player, antiDude)
 	}
 }
 
+//This function determines what baddies should do (i.e. walking around)
+//It implements somme AI and some randomness
 function enemyWalk(baddie)
 {
+	//should baddie jump?
 	var rand_jump = (Math.random() > 0.90);
+	//should the baddie have random behavior?
 	var rand_change = (Math.random() > Math.random());
+	//normal left to right motion
 	var time_var = (game.time.now % 10000) < 5000;
+	//where the player is in relation to this baddie
 	var plr_toLeft = (baddie.body.x - player.body.x) > 0;
+	//can the baddie see the dude?
 	var withinRange = calcDist(player.body.x, player.body.y, baddie.body.x, baddie.body.y);
 
-	if (withinRange < 125)
+	//if the baddie can see the dude, the baddie becomes angered and pursues
+	if (withinRange < baddieSightRange)
 	{
 		if (plr_toLeft)
 		{
@@ -465,6 +529,7 @@ function enemyWalk(baddie)
 			baddie.body.velocity.x = 100;
 		}
 	}
+	//o.w. the baddie does randomized stuff
 	else
 	{
 		// if (game.time.now % 10000 < 5000)
@@ -482,6 +547,7 @@ function enemyWalk(baddie)
 		// 	baddie.body.velocity.x = 50;
 		// }
 
+
 		if (rand_change ^ time_var)
 		{
 			baddie.body.velocity.x = -50;
@@ -494,12 +560,14 @@ function enemyWalk(baddie)
 
 	}
 
+	//the baddie can jump randomly
 	if(rand_jump && baddie.body.touching.down)
 	{
 		baddie.body.velocity.y = -100;
 	}
 }
 
+//a point-to-point calculation function
 function calcDist(pX, pY, bX, bY)
 {
 	var powX = Math.pow(pX-bX, 2);
@@ -509,6 +577,7 @@ function calcDist(pX, pY, bX, bY)
 }
 
 
+//increases the font size of my HUD texts depending on points
 function buildSize (myStr)
 {
 	var _fontSize = myStr.substr(0,myStr.length - myFontPost.length);
