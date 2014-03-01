@@ -365,7 +365,7 @@ function pushAirMessage()
 	//console.log($("#msgContainer"))
 	//document.getElementById("msgContainer").innerHTML = "ASDASDDFGSDFDSF"
 
-	var newAirMsg = $("<div class=\"air_msg\">YOU GOT MAD AIR!!!</div>");
+	var newAirMsg = $("<div class=\"air_msg\">MAD AIR!!!</div>");
 
 	$("#msgContainer").append(newAirMsg);
 
@@ -443,10 +443,13 @@ function decideFate(player, antiDude)
 
 function enemyWalk(baddie)
 {
-	//var rand_dir = (Math.random() > 0.5);
+	var rand_jump = (Math.random() > 0.90);
+	var rand_change = (Math.random() > Math.random());
+	var time_var = (game.time.now % 10000) < 5000;
 	var plr_toLeft = (baddie.body.x - player.body.x) > 0;
+	var withinRange = calcDist(player.body.x, player.body.y, baddie.body.x, baddie.body.y);
 
-	if (Math.abs(player.body.x - baddie.body.x) < 150)
+	if (withinRange < 125)
 	{
 		if (plr_toLeft)
 		{
@@ -459,16 +462,45 @@ function enemyWalk(baddie)
 	}
 	else
 	{
-		if (game.time.now % 10000 < 5000)
+		// if (game.time.now % 10000 < 5000)
+		// {
+		// 	baddie.body.velocity.x = -50;
+		// 	//baddie.dirTimer--;
+		// } 
+
+		// else if (rand_change)
+		// {
+
+		// }
+		// else
+		// {
+		// 	baddie.body.velocity.x = 50;
+		// }
+
+		if (rand_change ^ time_var)
 		{
 			baddie.body.velocity.x = -50;
-			//baddie.dirTimer--;
-		} 
+		}
 		else
 		{
 			baddie.body.velocity.x = 50;
 		}
+
+
 	}
+
+	if(rand_jump && baddie.body.touching.down)
+	{
+		baddie.body.velocity.y = -100;
+	}
+}
+
+function calcDist(pX, pY, bX, bY)
+{
+	var powX = Math.pow(pX-bX, 2);
+	var powY = Math.pow(pY-bY, 2);
+
+	return Math.sqrt(powX+powY);
 }
 
 
