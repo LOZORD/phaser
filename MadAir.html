@@ -1,0 +1,286 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+	<title>MadAir: A Phaser Game</title>
+	<link href='http://fonts.googleapis.com/css?family=Audiowide' rel='stylesheet' type='text/css'>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+            font-family: Audiowide, sans-serif;
+        }
+
+        .air_msg
+        {
+        	color: pink;
+        	font-family: Audiowide, sans-serif;
+        	font-size: 3em;
+        	text-align: center;
+        	z-index: 10;
+        }
+
+        #msgContainer
+        {
+        	position: absolute;
+        	margin: 0 auto;
+        	/*float: left;*/
+        	margin-left: 300px;
+        }
+
+    </style>
+</head>
+<body>
+<div id = "msgContainer">
+	<!-- <div id="#air_msg">GOT MAD AIR!</div> -->
+</div>
+
+<script type="text/javascript">
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+var score = 0;
+var scoreText;
+var diveRate = 100;
+var nextDive = 0;
+var canDive = true;
+var isDiving = false;
+var numMadAirs = 4;
+var bounceText;
+var madAirsGrabbed = 0;
+var timerText;
+var finished = false;
+var numStars = 12;
+
+function preload() {
+	//game.load.image("sky", "assets/sky.png");
+	game.load.image("ground", "assets/platform.png");
+	game.load.image("star", "assets/star.png");
+	game.load.spritesheet("dude", "assets/dude.png", 32, 48);
+	game.load.image("bonus", "assets/diamond.png");
+	//game.load.spritesheet("enemy", "assets/baddy.png", 32, 48);
+}
+
+function create() {
+
+	//game.world.setBounds(-1000, -1000, 1000, 1000);
+
+	//game.add.sprite(0,0,"sky");
+
+	game.stage.backgroundColor = "#14aaff";
+
+	platforms = game.add.group();
+
+	var ground = platforms.create(0, game.world.height - 64, "ground");
+
+	ground.scale.setTo(2, 2);
+
+	ground.body.immovable = true;
+
+	var ledge = platforms.create(400, 400, "ground");
+
+	ledge.body.immovable = true;
+
+	ledge = platforms.create(-150, 250, "ground");
+
+	ledge.body.immovable = true;
+
+	player = game.add.sprite(32, game.world.height - 150, "dude");
+
+	player["body"]["bounce"]["y"] = 0.2;
+	player.body.gravity.y = 6;
+	player.body.collideWorldBounds = true;
+
+	player.animations.add("left", [0,1,2,3], 10, true);
+	player.animations.add("right", [5,6,7,8], 10, true);
+
+	cursors = game.input.keyboard.createCursorKeys();
+
+	scoreText = game.add.text(16, 16, "Score: 0", {font: '32px Audiowide', fill: "darkorchid"});
+	bounceText = game.add.text(16, 64, madAirToString(), {font: '20px Audiowide', fill: "chartreuse"});
+	timerText = game.add.text(16, 88, "Time: 0", {font: "16px Audiowide", fill: "#000"});
+
+	stars = game.add.group();
+
+
+	for (var i = 0; i < numStars; i++) 
+	{
+		var star = stars.create(i * 70, 0 , "star");
+
+		star.body.gravity.y = 6;
+
+		star.body.bounce.y = 0.7 + Math.random() * 0.2;
+	};
+
+	bonuses = game.add.group();
+
+	//madAir = bonuses.create(300, 275, "bonus");
+	//madAir.body.gravity.y = 3;
+	//madAir.body.collideWorldBounds = true;
+
+	for(var i = 0; i < numMadAirs; i++)
+	{
+		var madAir = bonuses.create(i * 200, 0, "bonus");
+
+		madAir.body.gravity.y = 1;
+	}
+
+	//enemies = game.add.group();
+
+	//antiDude = enemies.create(500, 275, "enemy");
+	//antiDude = body.collideWorldBounds = true;
+
+}
+
+function update() {
+
+	game.physics.collide(player, platforms);
+
+	game.physics.collide(stars, platforms);
+
+	game.physics.overlap(player, stars, collectStar);
+
+	game.physics.overlap(player, bonuses, getMadAir);
+
+	game.physics.collide(bonuses, platforms);
+
+
+
+	//game.physics.collide(antiDude, platforms);
+
+	//game.physics.overlap()
+
+	 //  Reset the players velocity (movement)
+    player.body.velocity.x = 0;
+
+    if (cursors.left.isDown)
+    {
+        //  Move to the left
+        player.body.velocity.x = -150;
+
+        player.animations.play('left');
+    }
+
+    else if (cursors.right.isDown)
+    {
+        //  Move to the right
+        player.body.velocity.x = 150;
+
+        player.animations.play('right');
+    }
+    else
+    {
+        //  Stand still
+        player.animations.stop();
+
+        player.frame = 4;
+    }
+
+    //  Allow the player to jump if they are touching the ground.
+    if (cursors.up.isDown && player.body.touching.down)
+    {
+        player.body.velocity.y = -350;
+        isDiving = false;
+    }
+
+    if(cursors.down.isDown && !player.body.touching.down && game.time.now > nextDive && canDive)
+    {
+    	nextDive = game.time.now + diveRate;
+    	player.body.velocity.y = 1000;
+    	isDiving = true;
+    }
+    else if (cursors.down.isDown)
+    {
+    	canDive = false;
+
+    }
+    else if (game.time.now > nextDive)
+    {
+    	canDive = true;
+    	isDiving = false;
+    }
+
+    if(madAirsGrabbed != numMadAirs && score != numStars)
+    {
+    	timerText.content = "Time: " + (Math.floor(game.time.now)/1000).toFixed(2);
+    }
+    else if (!finished)
+    {
+    	var doneMsg = $("<div class=\"air_msg\">U DONE BRO</div>");
+    	$("#msgContainer").append(doneMsg);
+    	doneMsg.delay(5000).fadeOut("fast");
+    	finished = true;
+    }
+
+
+    //if(player.)
+
+
+}
+
+function collectStar (player, star)
+{
+	star.kill();
+	score += 1;
+	scoreText.content = "Score: " + score;
+}
+
+function getMadAir (player, bonus)
+{
+	bonus.kill();
+
+	madAirsGrabbed++;
+	
+	canDive = true;
+	
+	nextDive = 0;
+	
+	player.body.velocity.y = -400;
+	
+	// game.add.text(game.world.center-300, 0, "GET MAD AIR!", {font: "3em Audiowide", fill: "pink", align: "center"})
+
+	pushAirMessage();
+
+	//if (player.body.)
+
+	//BOUNCE MODIFICATION
+	player.body.bounce.y += numMadAirs/20;
+
+	bounceText.content = madAirToString();
+
+
+	//platforms.
+}
+
+function pushAirMessage()
+{
+	console.log($("#msgContainer"))
+	//document.getElementById("msgContainer").innerHTML = "ASDASDDFGSDFDSF"
+
+	var newAirMsg = $("<div class=\"air_msg\">U GOT MAD AIR!!!</div>");
+
+	$("#msgContainer").append(newAirMsg);
+
+	newAirMsg.delay(2000).fadeOut("slow");
+
+
+
+	//$("#msgContainer").append();
+	//console.log("appended");
+}
+
+function madAirToString()
+{
+	var myAir = player.body.bounce.y;
+
+	if (myAir < 1)
+		return "MadAir: " + ((myAir).toFixed(3) * 10) + " Topkeks/Gigashrex^2";
+	else
+		return "MadAir: GOD-TIER";
+}
+
+</script>
+
+</body>
+</html>
