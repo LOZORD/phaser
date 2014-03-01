@@ -118,9 +118,21 @@ function create() {
 	// scoreText.fixedToCamera = true;
 	// scoreText.cameraOffset.setTo(0,0);
 
-	antiDude = game.add.sprite(200, game.world.height-150, "baddie");
-	antiDude.body.gravity.y = 6;
-	antiDude.body.collideWorldBounds = true;
+	myEnemies = game.add.group();
+
+	var baddie = myEnemies.create(200, game.world.height-150, "baddie");
+	baddie.body.gravity.y = 6;
+	for (var i = 0; i < game.world.width; i+= Math.floor(Math.random()*300))
+	{
+		baddie = myEnemies.create(200 + i, game.world.height - 150, "baddie");
+		baddie.body.gravity.y = 6;
+		baddie.body.collideWorldBounds = true;
+		//baddie.dirTimer = 5000;
+	}
+
+	// antiDude = game.add.sprite(200, game.world.height-150, "baddie");
+	// antiDude.body.gravity.y = 6;
+	// antiDude.body.collideWorldBounds = true;
 
 
 
@@ -175,13 +187,13 @@ function update() {
 
 	// game.physics.collide(baddies, platforms);
 
-	game.physics.collide(antiDude, platforms);
+	game.physics.collide(myEnemies, platforms);
 
 	//game.physics.overlap(player, antiDude, killPlayer);
 
 	//game.physics.overlap(player, antiDude, killBaddie);
 
-	game.physics.overlap(player, antiDude, decideFate);
+	game.physics.overlap(player, myEnemies, decideFate);
 
 
 	scoreText.x = player.x - 140;
@@ -190,6 +202,8 @@ function update() {
 	bounceText.y = player.y - 40;
 	timerText.x = player.x - 140;
 	timerText.y = player.y - 20;
+
+	myEnemies.forEachAlive(enemyWalk, this);
 
 
 	//game.physics.collide(antiDude, platforms);
@@ -409,8 +423,40 @@ function decideFate(player, antiDude)
 		player.body.immovable = true;
 		player.body.collideWorldBounds = false;
 		dudeIsGood = false;
+		$("body").fadeOut(3000);
 	}
 }
+
+function enemyWalk(baddie)
+{
+	//var rand_dir = (Math.random() > 0.5);
+	var plr_toLeft = (baddie.body.x - player.body.x) > 0;
+
+	if (Math.abs(player.body.x - baddie.body.x) < 150)
+	{
+		if (plr_toLeft)
+		{
+			baddie.body.velocity.x = -100;
+		}
+		else
+		{
+			baddie.body.velocity.x = 100;
+		}
+	}
+	else
+	{
+		if (game.time.now % 10000 < 5000)
+		{
+			baddie.body.velocity.x = -50;
+			//baddie.dirTimer--;
+		} 
+		else
+		{
+			baddie.body.velocity.x = 50;
+		}
+	}
+}
+
 
 </script>
 
