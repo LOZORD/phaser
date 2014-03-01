@@ -46,12 +46,12 @@ var diveRate = 100;
 var nextDive = 0;
 var canDive = true;
 var isDiving = false;
-var numMadAirs = 4;
+var numMadAirs = 10;
 var bounceText;
 var madAirsGrabbed = 0;
 var timerText;
 var finished = false;
-var numStars = 12;
+var numStars = 20;
 
 function preload() {
 	//game.load.image("sky", "assets/sky.png");
@@ -64,15 +64,24 @@ function preload() {
 
 function create() {
 
-	//game.world.setBounds(-1000, -1000, 1000, 1000);
+	game.world.setBounds(0, 0, 1600, 600);
 
 	//game.add.sprite(0,0,"sky");
 
 	game.stage.backgroundColor = "#14aaff";
 
+
 	platforms = game.add.group();
 
+
 	var ground = platforms.create(0, game.world.height - 64, "ground");
+	ground.body.immovable = true;
+	for (var i = 400; i < game.world.width; i += 400)
+	{
+		ground = platforms.create(i, game.world.height - 64, "ground");
+		ground.body.immovable = true;
+	}
+	//console.log(ground.width + "Hello");
 
 	ground.scale.setTo(2, 2);
 
@@ -88,9 +97,12 @@ function create() {
 
 	player = game.add.sprite(32, game.world.height - 150, "dude");
 
-	player["body"]["bounce"]["y"] = 0.2;
-	player.body.gravity.y = 6;
+	player.body.bounce.y = 0.2;
+	player.body.gravity.y = 6.0;
 	player.body.collideWorldBounds = true;
+
+	game.camera.follow(player);
+	//player.body.blocked = {x:0, y:0, up: false, bottom: true, left: true, right: true};
 
 	player.animations.add("left", [0,1,2,3], 10, true);
 	player.animations.add("right", [5,6,7,8], 10, true);
@@ -98,6 +110,12 @@ function create() {
 	cursors = game.input.keyboard.createCursorKeys();
 
 	scoreText = game.add.text(16, 16, "Score: 0", {font: '32px Audiowide', fill: "darkorchid"});
+	//scoreText.follow(player);
+	//scoreText.fixedToCamera = true;
+	// scoreText.fixedToCamera = true;
+	// scoreText.cameraOffset.setTo(0,0);
+
+
 	bounceText = game.add.text(16, 64, madAirToString(), {font: '20px Audiowide', fill: "chartreuse"});
 	timerText = game.add.text(16, 88, "Time: 0", {font: "16px Audiowide", fill: "#000"});
 
@@ -121,7 +139,7 @@ function create() {
 
 	for(var i = 0; i < numMadAirs; i++)
 	{
-		var madAir = bonuses.create(i * 200, 0, "bonus");
+		var madAir = bonuses.create(i * 150, 0, "bonus");
 
 		madAir.body.gravity.y = 1;
 	}
@@ -145,6 +163,13 @@ function update() {
 
 	game.physics.collide(bonuses, platforms);
 
+
+	scoreText.x = player.x - 140;
+	scoreText.y = player.y - 70;
+	bounceText.x = player.x - 140;
+	bounceText.y = player.y - 40;
+	timerText.x = player.x - 140;
+	timerText.y = player.y - 20;
 
 
 	//game.physics.collide(antiDude, platforms);
@@ -213,8 +238,10 @@ function update() {
     	finished = true;
     }
 
-
-    //if(player.)
+    if (finished && cursors.left.isDown && cursors.right.isDown)
+    {
+    	player.body.bounce.y = 0.05;
+    }
 
 
 }
@@ -245,7 +272,7 @@ function getMadAir (player, bonus)
 	//if (player.body.)
 
 	//BOUNCE MODIFICATION
-	player.body.bounce.y += numMadAirs/20;
+	player.body.bounce.y = madAirsGrabbed/numMadAirs;
 
 	bounceText.content = madAirToString();
 
@@ -255,7 +282,7 @@ function getMadAir (player, bonus)
 
 function pushAirMessage()
 {
-	console.log($("#msgContainer"))
+	//console.log($("#msgContainer"))
 	//document.getElementById("msgContainer").innerHTML = "ASDASDDFGSDFDSF"
 
 	var newAirMsg = $("<div class=\"air_msg\">U GOT MAD AIR!!!</div>");
@@ -275,7 +302,7 @@ function madAirToString()
 	var myAir = player.body.bounce.y;
 
 	if (myAir < 1)
-		return "MadAir: " + ((myAir).toFixed(3) * 10) + " Topkeks/Gigashrex^2";
+		return "MadAir: " + ((myAir) * 10).toFixed(3) + " tks/Gx^2";
 	else
 		return "MadAir: GOD-TIER";
 }
