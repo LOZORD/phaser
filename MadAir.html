@@ -52,6 +52,7 @@ var madAirsGrabbed = 0;
 var timerText;
 var finished = false;
 var numStars = 20;
+var dudeIsGood = true;
 
 function preload() {
 	//game.load.image("sky", "assets/sky.png");
@@ -59,7 +60,9 @@ function preload() {
 	game.load.image("star", "assets/star.png");
 	game.load.spritesheet("dude", "assets/dude.png", 32, 48);
 	game.load.image("bonus", "assets/diamond.png");
-	//game.load.spritesheet("enemy", "assets/baddy.png", 32, 48);
+	//game.load.spritesheet("baddie", "assets/baddie.png", 32, 48);
+	//game.load.image("baddie", "assets/firstAid.png");
+	game.load.image("baddie", "assets/goomba.png");
 }
 
 function create() {
@@ -115,6 +118,11 @@ function create() {
 	// scoreText.fixedToCamera = true;
 	// scoreText.cameraOffset.setTo(0,0);
 
+	antiDude = game.add.sprite(200, game.world.height-150, "baddie");
+	antiDude.body.gravity.y = 6;
+	antiDude.body.collideWorldBounds = true;
+
+
 
 	bounceText = game.add.text(16, 64, madAirToString(), {font: '20px Audiowide', fill: "chartreuse"});
 	timerText = game.add.text(16, 88, "Time: 0", {font: "16px Audiowide", fill: "#000"});
@@ -144,14 +152,16 @@ function create() {
 		madAir.body.gravity.y = 1;
 	}
 
-	//enemies = game.add.group();
+	//baddies = game.add.group();
 
-	//antiDude = enemies.create(500, 275, "enemy");
-	//antiDude = body.collideWorldBounds = true;
+	// antiDude = baddies.create(200, game.world.height - 150, "enemy");
+	// antiDude.body.collideWorldBounds = true;
+	// antiDude.body.gravity.y = 6;
 
 }
 
 function update() {
+
 
 	game.physics.collide(player, platforms);
 
@@ -162,6 +172,16 @@ function update() {
 	game.physics.overlap(player, bonuses, getMadAir);
 
 	game.physics.collide(bonuses, platforms);
+
+	// game.physics.collide(baddies, platforms);
+
+	game.physics.collide(antiDude, platforms);
+
+	//game.physics.overlap(player, antiDude, killPlayer);
+
+	//game.physics.overlap(player, antiDude, killBaddie);
+
+	game.physics.overlap(player, antiDude, decideFate);
 
 
 	scoreText.x = player.x - 140;
@@ -177,73 +197,105 @@ function update() {
 	//game.physics.overlap()
 
 	 //  Reset the players velocity (movement)
-    player.body.velocity.x = 0;
+    player.body.velocity.x = 0
 
-    if (cursors.left.isDown)
+
+    if (dudeIsGood)
     {
-        //  Move to the left
-        player.body.velocity.x = -150;
+	    if (cursors.left.isDown)
+	    {
+	        //  Move to the left
+	        player.body.velocity.x = -150;
 
-        player.animations.play('left');
-    }
+	        player.animations.play('left');
+	    }
 
-    else if (cursors.right.isDown)
-    {
-        //  Move to the right
-        player.body.velocity.x = 150;
+	    else if (cursors.right.isDown)
+	    {
+	        //  Move to the right
+	        player.body.velocity.x = 150;
 
-        player.animations.play('right');
-    }
-    else
-    {
-        //  Stand still
-        player.animations.stop();
+	        player.animations.play('right');
+	    }
+	    else
+	    {
+	        //  Stand still
+	        player.animations.stop();
 
-        player.frame = 4;
-    }
+	        player.frame = 4;
+	    }
 
-    //  Allow the player to jump if they are touching the ground.
-    if (cursors.up.isDown && player.body.touching.down)
-    {
-        player.body.velocity.y = -350;
-        isDiving = false;
-    }
+	    //  Allow the player to jump if they are touching the ground.
+	    if (cursors.up.isDown && player.body.touching.down)
+	    {
+	        player.body.velocity.y = -350;
+	        isDiving = false;
+	    }
 
-    if(cursors.down.isDown && !player.body.touching.down && game.time.now > nextDive && canDive)
-    {
-    	nextDive = game.time.now + diveRate;
-    	player.body.velocity.y = 1000;
-    	isDiving = true;
-    }
-    else if (cursors.down.isDown)
-    {
-    	canDive = false;
+	    if(cursors.down.isDown && !player.body.touching.down && game.time.now > nextDive && canDive)
+	    {
+	    	nextDive = game.time.now + diveRate;
+	    	player.body.velocity.y = 1000;
+	    	isDiving = true;
+	    }
+	    else if (cursors.down.isDown)
+	    {
+	    	canDive = false;
 
-    }
-    else if (game.time.now > nextDive)
-    {
-    	canDive = true;
-    	isDiving = false;
-    }
+	    }
+	    else if (game.time.now > nextDive)
+	    {
+	    	canDive = true;
+	    	isDiving = false;
+	    }
 
-    if(madAirsGrabbed != numMadAirs && score != numStars)
-    {
-    	timerText.content = "Time: " + (Math.floor(game.time.now)/1000).toFixed(2);
-    }
-    else if (!finished)
-    {
-    	var doneMsg = $("<div class=\"air_msg\">U DONE BRO</div>");
-    	$("#msgContainer").append(doneMsg);
-    	doneMsg.delay(5000).fadeOut("fast");
-    	finished = true;
-    }
+	    if(madAirsGrabbed != numMadAirs && score != numStars)
+	    {
+	    	timerText.content = "Time: " + (Math.floor(game.time.now)/1000).toFixed(2);
+	    }
+	    else if (!finished)
+	    {
+	    	var doneMsg = $("<div class=\"air_msg\">U DONE BRO</div>");
+	    	$("#msgContainer").append(doneMsg);
+	    	doneMsg.delay(5000).fadeOut("fast");
+	    	finished = true;
+	    }
 
-    if (finished && cursors.left.isDown && cursors.right.isDown)
-    {
-    	//player.body.boun
-    	player.body.bounce.y = 0.05;
-    }
+	    if (finished && cursors.left.isDown && cursors.right.isDown)
+	    {
+	    	//player.body.boun
+	    	player.body.bounce.y = 0.05;
+	    }
 
+	    // collideEnemy = function(player, antiDude)
+	    // {
+	    // 	if (antiDude.body.touching.up)
+	    // 	{
+	    // 		player.body.velocity.y = -300;
+	    // 		score += 1;
+	    // 		antiDude.kill();
+	    // 		console.log("fadsf");
+	    // 	}
+
+	    // 	else
+	    // 	{
+	    // 		killPlayer(player, antiDude);
+	    // 	}
+	    // }
+
+	    if (isDiving && player.body.touching.down)
+	    {
+	    	console.log("cheese");
+	    }
+
+
+	}
+	else
+	{
+		player.body.velocity.x = 0;
+		player.body.velocity.y = 0;
+		player.animations.stop();
+	}
 
 }
 
@@ -306,6 +358,58 @@ function madAirToString()
 		return "MadAir: " + ((myAir) * 10).toFixed(3) + " tks/Gx^2";
 	else
 		return "MadAir: GOD-TIER";
+}
+
+
+// function killPlayer(player, antiDude)
+// {
+// 	player.angle = -90;
+// 	player.body.immovable = true;
+// 	player.body.collideWorldBounds = false;
+// 	player.alive = false;
+// 	dudeIsGood = false;
+// 	//game.physics.collide()
+// }
+
+// function killBaddie(player, antiDude)
+// {
+// 	antiDude.kill();
+// 	//game.time.now -= 30000000;
+// 	console.log("pizza");
+
+
+// }
+
+
+function decideFate(player, antiDude)
+{
+
+	if (isDiving)
+	{
+		canDive = true;
+		player.body.velocity.y = -350;
+		score++;
+		scoreText.content = "Score: " + score;
+		antiDude.kill();
+	}
+	else
+	{
+
+		// player.body.velocity.y = -200;
+		// player.angle = -90;
+		// //game.camera.follow(antiDude);
+		// player.body.gravity = -2;
+		// dudeIsGood = false
+		// //player.alive = false;
+		// var _level = player.body.y;
+		// player.body.velocity.y = -400;
+		// while(player.y != _level){}
+		player.angle = -90;
+		player.body.gravity.y = 200;
+		player.body.immovable = true;
+		player.body.collideWorldBounds = false;
+		dudeIsGood = false;
+	}
 }
 
 </script>
