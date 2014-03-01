@@ -53,6 +53,7 @@ var timerText;
 var finished = false;
 var numStars = 20;
 var dudeIsGood = true;
+var myFontPost = "px Audiowide";
 
 function preload() {
 	//game.load.image("sky", "assets/sky.png");
@@ -112,7 +113,7 @@ function create() {
 
 	cursors = game.input.keyboard.createCursorKeys();
 
-	scoreText = game.add.text(16, 16, "Score: 0/" + numStars, {font: '32px Audiowide', fill: "darkorchid"});
+	scoreText = game.add.text(16, 16, "Score: 0/" + numStars, {font: '20px Audiowide', fill: "darkorchid"});
 	//scoreText.follow(player);
 	//scoreText.fixedToCamera = true;
 	// scoreText.fixedToCamera = true;
@@ -149,7 +150,7 @@ function create() {
 
 
 
-	bounceText = game.add.text(16, 64, madAirToString(), {font: '20px Audiowide', fill: "chartreuse"});
+	bounceText = game.add.text(16, 64, madAirToString(), {font: '10px Audiowide', fill: "chartreuse"});
 	timerText = game.add.text(16, 88, "Time: 0", {font: "16px Audiowide", fill: "#000"});
 
 	stars = game.add.group();
@@ -331,6 +332,8 @@ function collectStar (player, star)
 	star.kill();
 	score += 1;
 	scoreText.content = "Score: " + score + "/" + numStars;
+	//console.log(scoreText.font.font);
+	scoreText.font.font = buildSize(scoreText.font.font);
 }
 
 function getMadAir (player, bonus)
@@ -355,6 +358,7 @@ function getMadAir (player, bonus)
 	player.body.bounce.y = madAirsGrabbed/numMadAirs;
 
 	bounceText.content = madAirToString();
+	bounceText.font.font = buildSize(bounceText.font.font);
 
 
 	//platforms.
@@ -418,6 +422,7 @@ function decideFate(player, antiDude)
 		player.body.velocity.y = -350;
 		score++;
 		scoreText.content = "Score: " + score + "/" + numStars;
+		scoreText.font.font = buildSize(scoreText.font.font);
 		antiDude.kill();
 	}
 	else
@@ -503,6 +508,19 @@ function calcDist(pX, pY, bX, bY)
 	return Math.sqrt(powX+powY);
 }
 
+
+function buildSize (myStr)
+{
+	var _fontSize = myStr.substr(0,myStr.length - myFontPost.length);
+	//return myStr;
+
+	//console.log("FIRST: " + _fontSize);
+
+	_fontSize = (parseInt(_fontSize) + 1);
+	//console.log("SECOND: " + _fontSize);
+
+	return _fontSize + myFontPost;
+}
 
 </script>
 
